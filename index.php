@@ -127,7 +127,7 @@ $nextName = $names[0];
 $currentName = $names[count($names)-1];   // Yatsı
 
 $time = date("H:i");
-// $time = "13:24";
+// $time = "20:29";
 $currentMoment = strtotime($time);
 $diff = 0;
 
@@ -142,9 +142,12 @@ if(isset($names[$index + 1])) $nextName = $names[$index + 1];
 
 $diff = (strtotime($times[$nextName]) - $currentMoment)/60; // saniye->dakika
 
+if($diff < 0) $diff += 24*60; //yatsi, geceyarisindan evvel imsak hesabı
+
+
 $leftHours = 0;
 
-if($diff >= 60 ) $leftHours = floor($diff/60);
+if(abs($diff) >= 60 ) $leftHours = floor($diff/60);
 
 $leftMinutes = $diff % 60;
 
