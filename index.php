@@ -221,7 +221,7 @@ echo "\n\n";
 function controlOutput($buffer){
     global $title;
 
-    if(isset($_SERVER['HTTP_USER_AGENT']) && strpos("curl", $_SERVER['HTTP_USER_AGENT']))
+    if(isset($_SERVER['HTTP_USER_AGENT']) && !strpos("curl", $_SERVER['HTTP_USER_AGENT']))
     {
         $converter = new AnsiToHtmlConverter();
         $html = $converter->convert($buffer);
