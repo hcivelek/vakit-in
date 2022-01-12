@@ -51,29 +51,13 @@ function cechoLn($color, $text){
     cecho ($color, $text."\n");
 }
 
-$borderColor = "white";
-$titleColor  = "cyan";
-$nameColor   = "lMagenta";
-$timeColor   = "dGray";
-$sepColor    = "white";
-$sourceColor   = "cyan";
-$linkColor   = "white";
-
-
-// istanbul.. 
-$url="http://www.namazvakti.com/DailyRSS.php?cityID=16741";
-
-$xmlString = file_get_contents($url);
-
-$xml = simplexml_load_string($xmlString);
-
-$arr = json_decode(json_encode($xml)); // convert the XML string to JSON
-
-$title = trim($arr->channel->title);
-
-$desc = str_replace(["\t",'<p>','<br>'],'',$arr->channel->item->description);
-
-$lines = explode("\n",trim($desc));
+$borderColor    = "white";
+$titleColor     = "cyan";
+$nameColor      = "lMagenta";
+$timeColor      = "dGray";
+$markedColor    = "white";
+$sourceColor    = "cyan";
+$linkColor      = "white";
 
 
 function cechoTitle($color, $title, $titleColor = null){
@@ -113,32 +97,73 @@ function cechoLineFor($color, $title){
 }
 
 
+
+
+// istanbul.. 
+$url="http://www.namazvakti.com/DailyRSS.php?cityID=16741";
+
+$xmlString = file_get_contents($url);
+
+$xml = simplexml_load_string($xmlString);
+
+$arr = json_decode(json_encode($xml)); // convert the XML string to JSON
+
+$title = trim($arr->channel->title);
+
+$desc = str_replace(["\t",'<p>','<br>'],'',$arr->channel->item->description);
+
+$lines = explode("\n",trim($desc));
+
+
 foreach($lines as $i => $line)
 {
-        [$vakit, $saat, $dk] = explode(":", $line);
+    [$name, $hour, $min] = explode(":", $line);
 
-        $names[] = trim($vakit);
-        $times[trim($vakit)] = [trim($saat), trim($dk)];
-
+    $names[] = trim($name);
+    $times[trim($name)] = trim($hour).":".trim($min);
 }
 
+$nextName = $names[0];
+$currentName = $names[count($names)-1];   // Yatsı
+
+$time = date("H:i");
+// $time = "13:24";
+$currentMoment = strtotime($time);
+$diff = 0;
+
+foreach($times as $zone => $tm){    
+    $moment = strtotime($tm);    
+    if( $currentMoment >= $moment ) $currentName = $zone;    
+}
+
+$index = array_search($currentName, $names);
+
+if(isset($names[$index + 1])) $nextName = $names[$index + 1];
+
+$diff = (strtotime($times[$nextName]) - $currentMoment)/60; // saniye->dakika
+
+$leftHours = 0;
+
+if($diff >= 60 ) $leftHours = floor($diff/60);
+
+$leftMinutes = $diff % 60;
+
+
 // title tek haneli ise çifte tamamlayalim
-if(!mb_strlen($title) % 2)  $title .= "";
+if(mb_strlen($title) % 2)  $title .= " ";
 
 $maxTitle = 72;
 $empty = $maxTitle - mb_strlen($title);
 
 $veryTop    = '┌────────────────────────────────────────────────────────────────────────┐';
 $titleBegin = '│';
-// İstanbul için  namaz vakitleri       
 $titleEnd   = '│';
 $underTitle = '├───────────┬───────────┬────────────┬───────────┬───────────┬───────────┤';
-$nameZones   = ['│  ','İmsâk','    │   ','Güneş','   │   ','Öğle','     │  ','İkindi','   │   ','Akşam','   │   ','Yatsı','   │'];
+$nameZones   = ['│  ','    │   ','   │   ','     │  ','   │   ','   │   ','   │'];
 $underZone  = '├───────────┼───────────┼────────────┼───────────┼───────────┼───────────┤';
 $timeZones   = ['│   ','   │   ','   │   ','    │   ','   │   ','   │   ','   │'];
-$veryBottom = '└───────────┴───────────┴────────────┴───────────┴───────────┴───────────┘';
-
-
+$infoBottom = '├───────────┴───────────┴────────────┴───────────┴───────────┴───────────┤';
+$veryBottom = '└────────────────────────────────────────────────────────────────────────┘';
 
 
 cechoLn($borderColor, $veryTop);
@@ -147,31 +172,49 @@ cecho($titleColor, str_repeat(" ",$empty/2).$title.str_repeat(" ",$empty/2));
 cechoLn($borderColor, $titleEnd);
 cechoLn($borderColor, $underTitle);
 
-for($i=0;$i<count($nameZones);$i++){
-    cecho($borderColor, $nameZones[$i]);
-    if(isset($nameZones[$i+1])) cecho($nameColor, $nameZones[$i+1]);
-    $i++;
+
+foreach($nameZones as $i => $nz)
+{
+    cecho($borderColor, $nz);
+    
+    if (isset($names[$i])) {
+        if($names[$i] == $currentName) cecho($markedColor, $names[$i]);
+        else cecho($nameColor, $names[$i]);
+
+    }
 }
 
 echo "\n";
 
 cechoLn($borderColor, $underZone);
 
-foreach($timeZones as $i=>$tz){
+foreach($timeZones as $i => $tz){
     cecho($borderColor, $tz);
     
-    if (isset($names[$i])) {
-        cecho($timeColor, $times[$names[$i]][0]);
-        cecho($sepColor, ":");
-        cecho($timeColor, $times[$names[$i]][1]);
-    }
+    if (isset($names[$i])) cecho($timeColor, $times[$names[$i]]);
 }
 
+
 echo "\n";
+cechoLn($borderColor, $infoBottom);
+
+cecho($borderColor, $titleBegin);
+$message = "Saat: ".$time." ".$nextName." vaktine kalan ".($leftHours ? $leftHours.' saat ' : '').$leftMinutes." dk.";
+
+// mesaj tek haneli ise çifte tamamlayalim
+if(mb_strlen($message) % 2)  $message .= " ";
+
+$empty = $maxTitle - mb_strlen($message);
+
+cecho($linkColor, str_repeat(" ",$empty/2).$message.str_repeat(" ",$empty/2));
+
+cechoLn($borderColor, $titleEnd);
+
 
 cechoLn($borderColor, $veryBottom);
 cecho($sourceColor," Kaynak: ");
 cechoLn($linkColor, "https://namazvakti.com");
+
 
 echo "\n\n";
 
@@ -196,7 +239,6 @@ function controlOutput($buffer){
         <head><title>'.$title.'</title></head>
         <body>
             <pre>'.$html.'</pre>
-            '.$_SERVER['HTTP_USER_AGENT'].'
         </body>
         </html>';
     }
