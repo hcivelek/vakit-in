@@ -1,4 +1,8 @@
 <?php 
+require_once __DIR__.'/vendor/autoload.php';
+use SensioLabs\AnsiConverter\AnsiToHtmlConverter;
+
+ob_start("controlOutput");
 
 // Color Echo
 function cecho($color, $text, $bgColor = "transparent"){
@@ -46,6 +50,14 @@ function cecho($color, $text, $bgColor = "transparent"){
 function cechoLn($color, $text){
     cecho ($color, $text."\n");
 }
+
+$borderColor = "white";
+$titleColor  = "cyan";
+$nameColor   = "lMagenta";
+$timeColor   = "dGray";
+$sepColor    = "white";
+$sourceColor   = "cyan";
+$linkColor   = "white";
 
 
 // istanbul.. 
@@ -127,11 +139,7 @@ $timeZones   = ['│   ','   │   ','   │   ','    │   ','   │   ','   �
 $veryBottom = '└───────────┴───────────┴────────────┴───────────┴───────────┴───────────┘';
 
 
-$borderColor = "yellow";
-$titleColor  = "lGreen";
-$nameColor   = "lMagenta";
-$timeColor   = "white";
-$sepColor    = "red";
+
 
 cechoLn($borderColor, $veryTop);
 cecho($borderColor, $titleBegin);
@@ -162,5 +170,35 @@ foreach($timeZones as $i=>$tz){
 echo "\n";
 
 cechoLn($borderColor, $veryBottom);
+cecho($sourceColor," Kaynak: ");
+cechoLn($linkColor, "https://namazvakti.com");
 
 echo "\n\n";
+
+function controlOutput($buffer){
+    global $title;
+
+    if(isset($_SERVER['HTTP_USER_AGENT']))
+    {
+        $converter = new AnsiToHtmlConverter();
+        $html = $converter->convert($buffer);
+
+        return '<html>
+        <style>
+        body{
+            background-color:#000;
+        }
+        pre{
+            font-size:75%;
+            font-family: "Source Code Pro", "DejaVu Sans Mono", Menlo, "Lucida Sans Typewriter", "Lucida Console", monaco, "Bitstream Vera Sans Mono", monospace;
+        }            
+        </style>
+        <head><title>'.$title.'</title></head>
+        <body>
+            <pre>'.$html.'</pre>
+        </body>
+        </html>';
+    }
+
+    return $buffer;
+}
