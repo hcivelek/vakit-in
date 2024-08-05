@@ -5,13 +5,8 @@ require_once "./cities.php";
 
 $cityID = $_GET['city_id'] ?? '16741';
 
-// $file = date("Y")."-".$cityID.".xml";
-// echo $file;exit;
-
-
 // istanbul.. 
-// $url="http://www.namazvakti.com/DailyRSS.php?cityID=".$cityID;
-$url="https://www.namazvakti.com/XML.php?cityID=".$cityID; // Yıllık rss, (sabah vakti var)
+$url="http://www.namazvakti.com/DailyRSS.php?cityID=".$cityID;
 
 $xmlString = file_get_contents($url);
 
@@ -19,38 +14,11 @@ $xml = simplexml_load_string($xmlString);
 
 $arr = json_decode(json_encode($xml)); // convert the XML string to JSON
 
-$theDay = date("z") + 1;
+$title = trim($arr->channel->title);
 
-$index = [
-    "0" => "İmsak",
-    "1" => "Sabah",
-    "2" => "Güneş",
-    // "3" => "işrak",
-    // "4" => "kerahet",
-    "5" => "Öğle",
-    "6" => "İkindi",
-    // "7" => "asr-ı sani",
-    // "8" => "isfirar",
-    "9" => "Akşam",
-    // "10" => "iştibak",
-    "11" => "Yatsı",
-    // "12" => "işâ-i sânî",
-    // "13" => "kıble saati"
-];
+$desc = str_replace(["\t",'<p>','<br>'],'',$arr->channel->item->description);
 
-
-// 00:00 01:00 02:00
-$times = explode("	",$arr->prayertimes[$theDay]);
-$data = [];
-
-array_map(function($i) use ($times, $index, &$data){
-    $data[$index[$i]] = $times[$i];
-}, array_keys($index));
- 
-
-// $title = trim($arr->channel->title);
-// $desc = str_replace(["\t",'<p>','<br>'],'',$arr->channel->item->description);
-// $lines = explode("\n",trim($desc));
+$lines = explode("\n",trim($desc));
 ?>
 <html>
     <head>
@@ -79,10 +47,11 @@ array_map(function($i) use ($times, $index, &$data){
                 </form>
             </td>
         </tr>
-        <?php foreach($data as $vakit => $saat):?>
+        <?php foreach($lines as $line):?>
+        <?php $str = explode(" : ", $line);?>
         <tr>
-            <td class="text-right"><b><?php echo $vakit;?></b></td>
-            <td><?php echo $saat;?></td>
+            <td class="text-right"><b><?php echo $str[0];?></b></td>
+            <td><?php echo $str[1];?></td>
         </tr>
         <?php endforeach?>
     </table>
